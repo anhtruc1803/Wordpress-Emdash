@@ -1,4 +1,11 @@
-import type { DashboardData, ManualFixUpdateInput, ProjectCreateInput, ProjectRecord, WorkspaceView } from "./ui";
+import type {
+  DashboardData,
+  ManualFixUpdateInput,
+  ProjectCreateInput,
+  ProjectRecord,
+  ProjectUpdateInput,
+  WorkspaceView
+} from "./ui";
 
 export interface ProjectCreateResponse {
   project: ProjectRecord;
@@ -21,4 +28,4 @@ export interface ActionResponse {
   workspace: WorkspaceView;
 }
 
-export type { ManualFixUpdateInput, ProjectCreateInput };
+export type { ManualFixUpdateInput, ProjectCreateInput, ProjectUpdateInput };

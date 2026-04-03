@@ -18,10 +18,14 @@ const projects: ProjectRecord[] = [
       fileName: "acme.xml",
       label: "acme.xml"
     },
+    target: null,
     sourceValidation: {
       state: "valid",
       checkedAt: "2026-04-02T11:00:00.000Z",
       message: "Source validated successfully."
+    },
+    targetValidation: {
+      state: "unknown"
     },
     recommendation: "Cleanup Needed",
     difficulty: {

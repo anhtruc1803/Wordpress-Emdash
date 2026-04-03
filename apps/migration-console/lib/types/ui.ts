@@ -1,6 +1,7 @@
 import type {
   AuditResult,
   GeneratedArtifacts,
+  ImportExecutionResult,
   ImportPlan,
   PipelineArtifactsSummary,
   TransformResult,
@@ -23,6 +24,12 @@ export type SourceValidationState = "unknown" | "valid" | "invalid";
 
 export type ManualFixStatus = "open" | "in_review" | "resolved";
 
+export interface EmDashTargetConfig {
+  baseUrl: string;
+  apiBasePath: string;
+  apiTokenConfigured: boolean;
+}
+
 export type MigrationSourceConfig =
   | {
       kind: "wxr";
@@ -44,13 +51,20 @@ export interface ProjectRecord {
   createdAt: string;
   updatedAt: string;
   source: MigrationSourceConfig | null;
+  target: EmDashTargetConfig | null;
   sourceValidation: {
+    state: SourceValidationState;
+    message?: string;
+    checkedAt?: string;
+  };
+  targetValidation: {
     state: SourceValidationState;
     message?: string;
     checkedAt?: string;
   };
   latestAuditAt?: string;
   latestDryRunAt?: string;
+  latestImportAt?: string;
   latestSummary?: PipelineArtifactsSummary;
   difficulty?: AuditResult["difficulty"];
   recommendation?: RecommendationLabel;
@@ -87,6 +101,7 @@ export interface WorkspaceSnapshot {
   auditResult?: AuditResult;
   transformResults?: TransformResult[];
   importPlan?: ImportPlan;
+  importResult?: ImportExecutionResult;
   summary?: PipelineArtifactsSummary;
   artifacts?: GeneratedArtifacts;
   adapterNote?: string;
@@ -103,7 +118,14 @@ export interface WorkspaceView {
 
 export interface ActivityEvent {
   id: string;
-  type: "project_created" | "source_validated" | "audit_run" | "dry_run" | "settings_updated";
+  type:
+    | "project_created"
+    | "source_validated"
+    | "target_validated"
+    | "audit_run"
+    | "dry_run"
+    | "import_run"
+    | "settings_updated";
   message: string;
   at: string;
 }
@@ -123,6 +145,14 @@ export interface ProjectCreateInput {
   name: string;
   sourceKind: "wxr" | "api";
   sourceUrl?: string;
+}
+
+export interface ProjectUpdateInput {
+  name?: string;
+  target?: {
+    baseUrl?: string;
+    apiToken?: string;
+  };
 }
 
 export interface ManualFixUpdateInput {

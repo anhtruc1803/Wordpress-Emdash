@@ -225,11 +225,75 @@ export interface ImportPlan {
   manualFixes: ManualFixRecord[];
 }
 
+export interface ImportedCollectionRecord {
+  collection: string;
+  created: boolean;
+}
+
+export interface ImportedFieldRecord {
+  collection: string;
+  field: string;
+  created: boolean;
+}
+
+export interface ImportedTaxonomyRecord {
+  taxonomy: string;
+  created: boolean;
+  collections: string[];
+}
+
+export interface ImportedTermRecord {
+  taxonomy: string;
+  slug: string;
+  termId?: string;
+  created: boolean;
+}
+
+export interface ImportedMediaRecord {
+  sourceId: string;
+  filename: string;
+  mediaId?: string;
+  reused: boolean;
+  sourceUrl: string;
+}
+
+export interface ImportedEntryRecord {
+  sourceId: string;
+  collection: string;
+  slug: string;
+  entryId?: string;
+  status: "imported" | "skipped";
+  reason?: string;
+}
+
+export interface ImportFailure {
+  stage: "collection" | "field" | "taxonomy" | "term" | "media" | "entry" | "target";
+  message: string;
+  sourceId?: string;
+  collection?: string;
+  field?: string;
+}
+
+export interface ImportExecutionResult {
+  mode: "planned" | "imported";
+  target: string;
+  importedAt: string;
+  note: string;
+  collections: ImportedCollectionRecord[];
+  fields: ImportedFieldRecord[];
+  taxonomies: ImportedTaxonomyRecord[];
+  terms: ImportedTermRecord[];
+  media: ImportedMediaRecord[];
+  entries: ImportedEntryRecord[];
+  failures: ImportFailure[];
+}
+
 export interface GeneratedArtifacts {
   outputDir: string;
   auditResultPath: string;
   transformPreviewPath?: string;
   importPlanPath?: string;
+  importResultPath?: string;
   migrationReportPath: string;
   manualFixesCsvPath?: string;
   summaryPath: string;

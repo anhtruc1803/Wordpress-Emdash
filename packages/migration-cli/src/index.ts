@@ -73,17 +73,19 @@ program
 
 program
   .command("import")
-  .description("Generate an import plan and hand it to the current EmDash adapter boundary.")
+  .description("Generate an import plan and optionally push it into a live EmDash target.")
   .argument("<input>", "Path to a WXR file or base WordPress URL/wp-json endpoint")
   .requiredOption("--source <source>", "Source kind: wxr | api", parseSourceKind)
-  .requiredOption("--target <url>", "Target EmDash URL for planning metadata")
+  .requiredOption("--target <url>", "Target EmDash site URL or /_emdash/api base URL")
+  .option("--token <token>", "EmDash personal access token for live import")
   .option("-o, --output-dir <dir>", "Directory for generated artifacts", "./artifacts")
-  .action(async (input: string, options: { source: SourceKind; target: string; outputDir: string }) => {
+  .action(async (input: string, options: { source: SourceKind; target: string; token?: string; outputDir: string }) => {
     const result = await executeImport({
       input,
       sourceKind: options.source,
       outputDir: options.outputDir,
-      target: options.target
+      target: options.target,
+      apiToken: options.token
     });
 
     if (result.adapterNote) {

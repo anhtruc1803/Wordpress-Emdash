@@ -116,6 +116,7 @@ const artifactLabels = {
     auditResultPath: "JSON audit",
     transformPreviewPath: "JSON xem trước transform",
     importPlanPath: "JSON import plan",
+    importResultPath: "JSON kết quả import",
     migrationReportPath: "Báo cáo Markdown",
     manualFixesCsvPath: "CSV chỉnh sửa thủ công",
     summaryPath: "JSON tóm tắt"
@@ -125,6 +126,7 @@ const artifactLabels = {
     auditResultPath: "Audit JSON",
     transformPreviewPath: "Transform preview JSON",
     importPlanPath: "Import plan JSON",
+    importResultPath: "Import result JSON",
     migrationReportPath: "Migration report Markdown",
     manualFixesCsvPath: "Manual fixes CSV",
     summaryPath: "Summary JSON"
@@ -291,6 +293,8 @@ export function translateActivityMessage(event: ActivityEvent, locale: Supported
       return locale === "vi" ? "Đã chạy audit." : "Audit completed.";
     case "dry_run":
       return locale === "vi" ? "Đã chạy thử dry run." : "Dry run completed.";
+    case "import_run":
+      return locale === "vi" ? "Đã chạy import sang EmDash." : "Import completed.";
     case "settings_updated":
       return locale === "vi" ? "Đã cập nhật thiết lập hoặc ghi chú." : "Settings or notes updated.";
     default:

@@ -37,6 +37,10 @@ export function getProjectManualFixStatePath(projectId: string): string {
   return join(getProjectDir(projectId), "manual-fixes-state.json");
 }
 
+export function getProjectTargetSecretPath(projectId: string): string {
+  return join(getProjectDir(projectId), "target-secret.json");
+}
+
 export function getProjectSourceDir(projectId: string): string {
   return join(getProjectDir(projectId), "source");
 }

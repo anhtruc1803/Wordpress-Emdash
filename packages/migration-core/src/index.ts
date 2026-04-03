@@ -10,3 +10,4 @@ export { createImportPlan } from "./planners/create-import-plan.js";
 export { renderMigrationReport } from "./reporters/markdown-report.js";
 export { renderManualFixesCsv } from "./reporters/manual-fixes-csv.js";
 export { executeAudit, executeDryRun, executeImport, loadSourceBundle, regenerateReportFromAudit } from "./pipeline.js";
+export { testEmDashConnection, normalizeEmDashApiBaseUrl } from "./adapters/emdash-api.js";

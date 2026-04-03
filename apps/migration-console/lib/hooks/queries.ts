@@ -7,8 +7,10 @@ import {
   fetchDashboard,
   fetchProjects,
   fetchWorkspace,
+  runImport,
   runAudit,
   runDryRun,
+  testTarget,
   testSource,
   updateManualFix,
   updateProjectSettings
@@ -74,10 +76,37 @@ export function useRunDryRunMutation(projectId: string) {
   });
 }
 
+export function useRunImportMutation(projectId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => runImport(projectId),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["workspace", projectId] }),
+        queryClient.invalidateQueries({ queryKey: ["projects"] }),
+        queryClient.invalidateQueries({ queryKey: ["dashboard"] })
+      ]);
+    }
+  });
+}
+
 export function useTestSourceMutation(projectId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: () => testSource(projectId),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["workspace", projectId] }),
+        queryClient.invalidateQueries({ queryKey: ["projects"] })
+      ]);
+    }
+  });
+}
+
+export function useTestTargetMutation(projectId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => testTarget(projectId),
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["workspace", projectId] }),
@@ -103,7 +132,8 @@ export function useUpdateManualFixMutation(projectId: string, fixId: string) {
 export function useUpdateProjectMutation(projectId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (payload: Record<string, unknown>) => updateProjectSettings(projectId, payload),
+    mutationFn: (payload: Parameters<typeof updateProjectSettings>[1]) =>
+      updateProjectSettings(projectId, payload),
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["workspace", projectId] }),

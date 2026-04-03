@@ -1,12 +1,14 @@
 import type {
   AuditResult,
+  ImportExecutionResult,
+  ImportPlan,
   LoadSourceOptions,
   PipelineArtifactsSummary,
   TransformResult,
   WordPressSourceBundle
 } from "@wp2emdash/shared-types";
 
-import { PlanningOnlyEmDashTargetAdapter } from "./adapters/emdash-target.js";
+import { createEmDashTargetAdapter } from "./adapters/emdash-target.js";
 import { auditWordPressSource } from "./auditors/audit-source.js";
 import { loadWordPressRestApi } from "./connectors/rest.js";
 import { loadWxrFile } from "./connectors/wxr.js";
@@ -19,6 +21,8 @@ export interface PipelineExecutionResult {
   bundle: WordPressSourceBundle;
   auditResult: AuditResult;
   transformResults?: TransformResult[];
+  importPlan?: ImportPlan;
+  importResult?: ImportExecutionResult;
   summary: PipelineArtifactsSummary;
   adapterNote?: string;
 }
@@ -29,6 +33,7 @@ export interface CommandOptions extends LoadSourceOptions {
 
 export interface ImportCommandOptions extends CommandOptions {
   target: string;
+  apiToken?: string;
 }
 
 export async function loadSourceBundle(options: LoadSourceOptions): Promise<WordPressSourceBundle> {
@@ -72,6 +77,7 @@ export async function executeDryRun(options: CommandOptions): Promise<PipelineEx
     bundle,
     auditResult,
     transformResults,
+    importPlan,
     summary
   };
 }
@@ -81,13 +87,20 @@ export async function executeImport(options: ImportCommandOptions): Promise<Pipe
   const auditResult = auditWordPressSource(bundle);
   const transformResults = transformBundleItems(bundle.contentItems);
   const importPlan = createImportPlan(bundle, transformResults, options.target);
-  const adapter = new PlanningOnlyEmDashTargetAdapter();
-  const adapterResult = await adapter.execute(importPlan, options.target);
+  const adapter = createEmDashTargetAdapter({
+    url: options.target,
+    apiToken: options.apiToken
+  });
+  const importResult = await adapter.execute(importPlan, bundle, {
+    url: options.target,
+    apiToken: options.apiToken
+  });
   const summary = await writeArtifacts({
     outputDir: options.outputDir,
     auditResult,
     transformResults,
     importPlan,
+    importResult,
     totalItems: bundle.contentItems.length
   });
 
@@ -95,8 +108,10 @@ export async function executeImport(options: ImportCommandOptions): Promise<Pipe
     bundle,
     auditResult,
     transformResults,
+    importPlan,
     summary,
-    adapterNote: adapterResult.note
+    importResult,
+    adapterNote: importResult.note
   };
 }
 

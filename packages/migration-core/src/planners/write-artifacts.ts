@@ -4,6 +4,7 @@ import { join } from "node:path";
 import type {
   AuditResult,
   GeneratedArtifacts,
+  ImportExecutionResult,
   ImportPlan,
   PipelineArtifactsSummary,
   TransformResult
@@ -19,6 +20,7 @@ export interface WriteArtifactsInput {
   totalItems: number;
   transformResults?: TransformResult[];
   importPlan?: ImportPlan;
+  importResult?: ImportExecutionResult;
 }
 
 export async function writeArtifacts(input: WriteArtifactsInput): Promise<PipelineArtifactsSummary> {
@@ -44,6 +46,11 @@ export async function writeArtifacts(input: WriteArtifactsInput): Promise<Pipeli
     artifacts.manualFixesCsvPath = join(input.outputDir, "manual-fixes.csv");
     await writeJsonFile(artifacts.importPlanPath, input.importPlan);
     await writeFile(artifacts.manualFixesCsvPath, renderManualFixesCsv(input.importPlan.manualFixes), "utf8");
+  }
+
+  if (input.importResult) {
+    artifacts.importResultPath = join(input.outputDir, "import-result.json");
+    await writeJsonFile(artifacts.importResultPath, input.importResult);
   }
 
   const summary: PipelineArtifactsSummary = {

@@ -4,6 +4,7 @@ import type {
   ManualFixUpdateInput,
   ProjectCreateInput,
   ProjectCreateResponse,
+  ProjectUpdateInput,
   ProjectsResponse,
   WorkspaceResponse
 } from "@/lib/types/api";
@@ -58,6 +59,26 @@ export async function runDryRun(projectId: string): Promise<ActionResponse["work
   ).workspace;
 }
 
+export async function runImport(projectId: string): Promise<ActionResponse["workspace"]> {
+  return (
+    await readJsonOrThrow<ActionResponse>(
+      await fetch(`/api/projects/${projectId}/actions/import`, {
+        method: "POST"
+      })
+    )
+  ).workspace;
+}
+
+export async function testTarget(projectId: string): Promise<ActionResponse["project"]> {
+  return (
+    await readJsonOrThrow<ActionResponse>(
+      await fetch(`/api/projects/${projectId}/actions/target-test`, {
+        method: "POST"
+      })
+    )
+  ).project;
+}
+
 export async function testSource(projectId: string): Promise<ActionResponse["project"]> {
   return (
     await readJsonOrThrow<ActionResponse>(
@@ -86,7 +107,10 @@ export async function updateManualFix(
   ).workspace;
 }
 
-export async function updateProjectSettings(projectId: string, payload: Record<string, unknown>): Promise<ActionResponse["project"]> {
+export async function updateProjectSettings(
+  projectId: string,
+  payload: ProjectUpdateInput
+): Promise<ActionResponse["project"]> {
   return (
     await readJsonOrThrow<ActionResponse>(
       await fetch(`/api/projects/${projectId}`, {

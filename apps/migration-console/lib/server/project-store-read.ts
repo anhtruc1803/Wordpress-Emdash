@@ -6,5 +6,14 @@ import { getProjectManifestPath } from "./storage";
 
 export async function loadProjectPublic(projectId: string): Promise<ProjectRecord> {
   const content = await readFile(getProjectManifestPath(projectId), "utf8");
-  return JSON.parse(content) as ProjectRecord;
+  const project = JSON.parse(content) as ProjectRecord;
+  return {
+    ...project,
+    sourceValidation: project.sourceValidation ?? {
+      state: "unknown"
+    },
+    targetValidation: project.targetValidation ?? {
+      state: "unknown"
+    }
+  };
 }
