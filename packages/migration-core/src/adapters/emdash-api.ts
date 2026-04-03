@@ -16,9 +16,36 @@ export interface EmDashCollectionRecord {
   slug: string;
 }
 
+export type EmDashFieldType =
+  | "string"
+  | "text"
+  | "number"
+  | "integer"
+  | "boolean"
+  | "datetime"
+  | "select"
+  | "multiSelect"
+  | "portableText"
+  | "image"
+  | "file"
+  | "reference"
+  | "json"
+  | "slug";
+
 export interface EmDashFieldRecord {
+  id?: string;
+  collectionId?: string;
   slug: string;
-  type?: string;
+  label?: string;
+  type?: EmDashFieldType;
+  required?: boolean;
+  unique?: boolean;
+  defaultValue?: unknown | null;
+  validation?: Record<string, unknown> | null;
+  widget?: string | null;
+  options?: Record<string, unknown> | null;
+  searchable?: boolean;
+  translatable?: boolean;
 }
 
 export interface EmDashTaxonomyRecord {
@@ -279,6 +306,25 @@ export class EmDashApiClient {
       `${this.apiBaseUrl}/content/${encodeURIComponent(collection)}`,
       {
         method: "POST",
+        body: JSON.stringify(payload)
+      }
+    );
+    return response.item;
+  }
+
+  async updateContent(
+    collection: string,
+    id: string,
+    payload: {
+      data?: Record<string, unknown>;
+      slug?: string | null;
+      status?: string;
+    }
+  ): Promise<EmDashContentRecord> {
+    const response = await this.requestJson<{ item: EmDashContentRecord }>(
+      `${this.apiBaseUrl}/content/${encodeURIComponent(collection)}/${encodeURIComponent(id)}`,
+      {
+        method: "PUT",
         body: JSON.stringify(payload)
       }
     );

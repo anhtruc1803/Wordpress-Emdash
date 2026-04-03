@@ -257,6 +257,22 @@ describe("LiveEmDashTargetAdapter", () => {
         const payload = JSON.parse(String(init?.body)) as {
           data: {
             body: Array<{ _type: string; style?: string }>;
+            title: string;
+          };
+        };
+        expect(payload.data.body[0]?.style).toBe("h2");
+        expect(payload.data.body[1]?._type).toBe("block");
+        expect(payload.data.title).toBe("Hello World");
+        return jsonResponse({ item: { id: "emdash-entry-1" } });
+      }
+
+      if (
+        url === "https://emdash.example/_emdash/api/content/posts/emdash-entry-1" &&
+        method === "PUT"
+      ) {
+        const payload = JSON.parse(String(init?.body)) as {
+          data: {
+            body: Array<{ _type: string; style?: string }>;
             migration_meta: {
               taxonomyTerms: Array<{ emdashTermId: string | null }>;
               portableTextSkippedNodes: Array<{ kind: string }>;
@@ -404,6 +420,13 @@ describe("LiveEmDashTargetAdapter", () => {
           };
         };
         expect(payload.data.body.length).toBeGreaterThan(0);
+        return jsonResponse({ item: { id: "emdash-entry-2" } });
+      }
+
+      if (
+        url === "https://emdash.example/_emdash/api/content/posts/emdash-entry-2" &&
+        method === "PUT"
+      ) {
         return jsonResponse({ item: { id: "emdash-entry-2" } });
       }
 
