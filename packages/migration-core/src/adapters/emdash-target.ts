@@ -8,7 +8,9 @@ import type {
 } from "@wp2emdash/shared-types";
 
 import {
+  EmDashDirectUploadUnsupportedError,
   EmDashApiClient,
+  type EmDashFieldRecord,
   type EmDashTargetRequest
 } from "./emdash-api.js";
 import { convertStructuredNodesToPortableText } from "./portable-text.js";
@@ -19,6 +21,18 @@ interface CollectionFieldSpec {
   type: "string" | "text" | "json" | "datetime" | "portableText";
   required?: boolean;
   searchable?: boolean;
+}
+
+interface CollectionImportContext {
+  contentField: {
+    slug: string;
+    type: CollectionFieldSpec["type"];
+  };
+  metadataField: {
+    slug: string;
+    type: CollectionFieldSpec["type"];
+  };
+  availableFields: Set<string>;
 }
 
 interface TaxonomySpec {
@@ -95,6 +109,7 @@ export class LiveEmDashTargetAdapter implements EmDashTargetAdapter {
     const collectionSpecs = buildCollectionFieldSpecs(plan, bundle);
     const existingCollections = await client.listCollections();
     const knownCollections = new Set(existingCollections.map((collection) => collection.slug));
+    const collectionContexts = new Map<string, CollectionImportContext>();
 
     for (const [collection, fields] of collectionSpecs.entries()) {
       if (knownCollections.has(collection)) {
@@ -112,6 +127,8 @@ export class LiveEmDashTargetAdapter implements EmDashTargetAdapter {
 
       const existingFields = await client.listFields(collection);
       const fieldTypesBySlug = new Map(existingFields.map((field) => [field.slug, field]));
+      const contentField = resolveContentField(collection, fields, existingFields);
+      const metadataField = resolveMetadataField(fields, existingFields);
 
       for (const field of fields) {
         const existingField = fieldTypesBySlug.get(field.slug);
@@ -123,6 +140,15 @@ export class LiveEmDashTargetAdapter implements EmDashTargetAdapter {
         await createFieldWithPortableTextFallback(client, collection, field);
         result.fields.push({ collection, field: field.slug, created: true });
       }
+
+      collectionContexts.set(collection, {
+        contentField,
+        metadataField,
+        availableFields: new Set([
+          ...existingFields.map((field) => field.slug),
+          ...fields.map((field) => field.slug)
+        ])
+      });
     }
 
     const taxonomySpecs = buildTaxonomySpecs(plan, bundle);
@@ -140,6 +166,15 @@ export class LiveEmDashTargetAdapter implements EmDashTargetAdapter {
         }
         result.media.push(importedMedia);
       } catch (error) {
+        if (error instanceof EmDashDirectUploadUnsupportedError) {
+          result.media.push({
+            sourceId: media.sourceId,
+            filename: media.filename,
+            sourceUrl: media.url,
+            reused: false
+          });
+          continue;
+        }
         failures.push({
           stage: "media",
           sourceId: media.sourceId,
@@ -203,21 +238,31 @@ export class LiveEmDashTargetAdapter implements EmDashTargetAdapter {
         structuredContentBackup: rewrittenContent,
         portableTextSkippedNodes: portableTextConversion.unsupportedNodes
       };
+      const collectionContext = collectionContexts.get(entry.targetCollection);
+      const contentField = collectionContext?.contentField ?? {
+        slug: "body",
+        type: "portableText" as const
+      };
+      const metadataField = collectionContext?.metadataField ?? {
+        slug: "migration_meta",
+        type: "json" as const
+      };
+      const entryData = {
+        title: entry.title,
+        ...buildContentFieldPayload(contentField, portableTextConversion, rewrittenContent, sourceItem),
+        ...(sourceItem.excerpt ? { migration_excerpt: sourceItem.excerpt } : {}),
+        ...(sourceItem.sourceUrl ? { migration_source_url: sourceItem.sourceUrl } : {}),
+        ...(sourceItem.publishedAt
+          ? { migration_published_at: sourceItem.publishedAt }
+          : {}),
+        [metadataField.slug]: migrationMeta
+      };
 
       try {
         const created = await client.createContent(entry.targetCollection, {
           slug: entry.slug,
           status: mapWordPressStatusToEmDashStatus(entry.status),
-          data: {
-            title: entry.title,
-            migration_content: portableTextConversion.portableText,
-            ...(sourceItem.excerpt ? { migration_excerpt: sourceItem.excerpt } : {}),
-            ...(sourceItem.sourceUrl ? { migration_source_url: sourceItem.sourceUrl } : {}),
-            ...(sourceItem.publishedAt
-              ? { migration_published_at: sourceItem.publishedAt }
-              : {}),
-            migration_meta: migrationMeta
-          }
+          data: entryData
         });
 
         result.entries.push({
@@ -411,8 +456,8 @@ function buildCollectionFieldSpecs(
         searchable: true
       },
       {
-        slug: "migration_content",
-        label: "Migration content",
+        slug: "body",
+        label: "Body",
         type: "portableText",
         required: true
       },
@@ -541,6 +586,124 @@ async function createFieldWithPortableTextFallback(
       type: "json"
     });
   }
+}
+
+function resolveContentField(
+  collection: string,
+  plannedFields: CollectionFieldSpec[],
+  existingFields: EmDashFieldRecord[]
+): CollectionImportContext["contentField"] {
+  const preferred = ["body", "content", "migration_content"];
+  for (const slug of preferred) {
+    const existing = existingFields.find((field) => field.slug === slug);
+    if (existing) {
+      return {
+        slug,
+        type: normalizeFieldType(existing.type)
+      };
+    }
+  }
+
+  const planned = plannedFields.find((field) => preferred.includes(field.slug));
+  if (planned) {
+    return {
+      slug: planned.slug,
+      type: planned.type
+    };
+  }
+
+  return {
+    slug: collection === "posts" ? "body" : "body",
+    type: "portableText"
+  };
+}
+
+function resolveMetadataField(
+  plannedFields: CollectionFieldSpec[],
+  existingFields: EmDashFieldRecord[]
+): CollectionImportContext["metadataField"] {
+  const existing = existingFields.find((field) => field.slug === "migration_meta");
+  if (existing) {
+    return {
+      slug: "migration_meta",
+      type: normalizeFieldType(existing.type)
+    };
+  }
+
+  const planned = plannedFields.find((field) => field.slug === "migration_meta");
+  return {
+    slug: planned?.slug ?? "migration_meta",
+    type: planned?.type ?? "json"
+  };
+}
+
+function normalizeFieldType(type?: string): CollectionFieldSpec["type"] {
+  if (type === "string" || type === "text" || type === "json" || type === "datetime" || type === "portableText") {
+    return type;
+  }
+  return "portableText";
+}
+
+function buildContentFieldPayload(
+  contentField: CollectionImportContext["contentField"],
+  portableTextConversion: ReturnType<typeof convertStructuredNodesToPortableText>,
+  rewrittenContent: StructuredNode[],
+  sourceItem: WordPressSourceBundle["contentItems"][number]
+): Record<string, unknown> {
+  switch (contentField.type) {
+    case "json":
+      return {
+        [contentField.slug]: rewrittenContent
+      };
+    case "text":
+    case "string":
+      return {
+        [contentField.slug]: sourceItem.rawContent?.trim() || serializeStructuredNodesToText(rewrittenContent)
+      };
+    case "portableText":
+    default:
+      return {
+        [contentField.slug]:
+          portableTextConversion.portableText.length > 0
+            ? portableTextConversion.portableText
+            : [{ _type: "block", _key: "empty-body", style: "normal", markDefs: [], children: [{ _type: "span", _key: "empty-body-span", marks: [], text: sourceItem.rawContent?.trim() || " " }] }]
+      };
+  }
+}
+
+function serializeStructuredNodesToText(nodes: StructuredNode[]): string {
+  return nodes
+    .map((node) => {
+      switch (node.kind) {
+        case "paragraph":
+        case "quote":
+          return node.text;
+        case "heading":
+          return node.text;
+        case "list":
+          return node.items.join("\n");
+        case "code":
+          return node.code;
+        case "html":
+          return node.rawHtml;
+        case "image":
+          return [node.alt, node.caption, node.url].filter(Boolean).join(" - ");
+        case "gallery":
+          return node.images.map((image) => [image.alt, image.url].filter(Boolean).join(" - ")).join("\n");
+        case "embed":
+          return [node.provider, node.url, node.html].filter(Boolean).join(" - ");
+        case "table":
+          return node.rows.map((row) => row.join(" | ")).join("\n");
+        case "fallback":
+          return `[Unsupported block: ${node.label}] ${node.rawPayload}`;
+        case "separator":
+          return "---";
+        default:
+          return "";
+      }
+    })
+    .filter(Boolean)
+    .join("\n\n");
 }
 
 function mapWordPressTaxonomyName(taxonomy: string): string {

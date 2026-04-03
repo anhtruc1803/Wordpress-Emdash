@@ -54,6 +54,13 @@ interface EmDashUploadUrlResponse {
   expiresAt?: string;
 }
 
+export class EmDashDirectUploadUnsupportedError extends Error {
+  constructor(message = "Storage does not support signed upload URLs. Use direct upload.") {
+    super(message);
+    this.name = "EmDashDirectUploadUnsupportedError";
+  }
+}
+
 export interface EmDashTargetRequest {
   url: string;
   apiToken?: string;
@@ -205,17 +212,28 @@ export class EmDashApiClient {
       sourceResponse.headers.get("content-type") ??
       "application/octet-stream";
 
-    const upload = await this.requestJson<EmDashUploadUrlResponse>(
-      `${this.apiBaseUrl}/media/upload-url`,
-      {
-        method: "POST",
-        body: JSON.stringify({
-          filename: media.filename,
-          contentType,
-          size: body.byteLength
-        })
+    let upload: EmDashUploadUrlResponse;
+    try {
+      upload = await this.requestJson<EmDashUploadUrlResponse>(
+        `${this.apiBaseUrl}/media/upload-url`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            filename: media.filename,
+            contentType,
+            size: body.byteLength
+          })
+        }
+      );
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        /signed upload URLs|direct upload/i.test(error.message)
+      ) {
+        throw new EmDashDirectUploadUnsupportedError(error.message);
       }
-    );
+      throw error;
+    }
 
     if (!upload.existing && upload.uploadUrl && upload.method) {
       const uploadResponse = await fetch(upload.uploadUrl, {

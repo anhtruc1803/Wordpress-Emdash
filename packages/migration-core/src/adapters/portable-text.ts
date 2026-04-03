@@ -1,5 +1,7 @@
 import type { StructuredNode } from "@wp2emdash/shared-types";
 
+import { extractImageDescriptors, stripHtml } from "../utils/html.js";
+
 export interface PortableTextSpan {
   _key: string;
   _type: "span";
@@ -70,6 +72,55 @@ export function convertStructuredNodesToPortableText(
       case "separator":
         portableText.push(createTextBlock("normal", "---"));
         break;
+      case "image":
+        portableText.push(
+          createTextBlock(
+            "normal",
+            [node.alt, node.caption, node.url].filter(Boolean).join(" - ") || node.url
+          )
+        );
+        break;
+      case "gallery":
+        portableText.push(
+          ...node.images
+            .filter((image) => Boolean(image.url))
+            .map((image, index) =>
+              createTextBlock("normal", [image.alt, image.url].filter(Boolean).join(" - "), {
+                suffix: `gallery-${index}`
+              })
+            )
+        );
+        break;
+      case "embed":
+        portableText.push(
+          createTextBlock(
+            "normal",
+            [node.provider ? `Embed ${node.provider}` : "Embedded media", node.url ?? stripHtml(node.html ?? "")]
+              .filter(Boolean)
+              .join(": ")
+          )
+        );
+        break;
+      case "table":
+        portableText.push(
+          ...node.rows.map((row, index) =>
+            createTextBlock("normal", row.join(" | "), {
+              suffix: `table-${index}`
+            })
+          )
+        );
+        break;
+      case "html":
+        portableText.push(...htmlToBlocks(node.rawHtml));
+        break;
+      case "fallback":
+        portableText.push(
+          createTextBlock(
+            "normal",
+            `[Unsupported block: ${node.label}] ${stripHtml(node.rawPayload)}`
+          )
+        );
+        break;
       default:
         unsupportedNodes.push(node);
         break;
@@ -115,4 +166,30 @@ function toHeadingStyle(level: number): PortableTextBlock["style"] {
 
 function createKey(prefix: string): string {
   return `${prefix}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function htmlToBlocks(rawHtml: string): PortableTextBlock[] {
+  const imageBlocks = extractImageDescriptors(rawHtml)
+    .filter((image) => Boolean(image.url))
+    .map((image, index) =>
+      createTextBlock("normal", [image.alt, image.url].filter(Boolean).join(" - "), {
+        suffix: `html-image-${index}`
+      })
+    );
+
+  const textContent = rawHtml
+    .replace(/<(br|\/p|\/div|\/section|\/article|\/li|\/h[1-6])\b[^>]*>/gi, "\n")
+    .replace(/<\/tr>/gi, "\n")
+    .replace(/<\/td>|<\/th>/gi, " | ")
+    .replace(/<[^>]+>/g, " ")
+    .split("\n")
+    .map((line) => stripHtml(line))
+    .filter(Boolean)
+    .map((line, index) =>
+      createTextBlock("normal", line, {
+        suffix: `html-${index}`
+      })
+    );
+
+  return [...textContent, ...imageBlocks];
 }

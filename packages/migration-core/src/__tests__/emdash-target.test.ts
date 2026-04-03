@@ -256,22 +256,20 @@ describe("LiveEmDashTargetAdapter", () => {
       if (url === "https://emdash.example/_emdash/api/content/posts" && method === "POST") {
         const payload = JSON.parse(String(init?.body)) as {
           data: {
-            migration_content: Array<{ _type: string; style?: string }>;
+            body: Array<{ _type: string; style?: string }>;
             migration_meta: {
               taxonomyTerms: Array<{ emdashTermId: string | null }>;
               portableTextSkippedNodes: Array<{ kind: string }>;
             };
           };
         };
-        expect(payload.data.migration_content[0]?.style).toBe("h2");
-        expect(payload.data.migration_content[1]?._type).toBe("block");
+        expect(payload.data.body[0]?.style).toBe("h2");
+        expect(payload.data.body[1]?._type).toBe("block");
         expect(payload.data.migration_meta.taxonomyTerms).toEqual([
           expect.objectContaining({ emdashTermId: "emdash-term-category" }),
           expect.objectContaining({ emdashTermId: "emdash-term-tag" })
         ]);
-        expect(payload.data.migration_meta.portableTextSkippedNodes).toEqual([
-          expect.objectContaining({ kind: "image" })
-        ]);
+        expect(payload.data.migration_meta.portableTextSkippedNodes).toEqual([]);
         return jsonResponse({ item: { id: "emdash-entry-1" } });
       }
 
@@ -310,6 +308,124 @@ describe("LiveEmDashTargetAdapter", () => {
     });
     expect(result.failures).toHaveLength(0);
     expect(fetchMock).toHaveBeenCalled();
+  });
+
+  it("falls back gracefully when the target storage does not support signed uploads", async () => {
+    const fetchMock = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      const url =
+        typeof input === "string"
+          ? input
+          : input instanceof URL
+            ? input.toString()
+            : input.url;
+      const method = (init?.method ?? "GET").toUpperCase();
+
+      if (url === "https://source.test/image.jpg") {
+        return new Response("binary-image-data", {
+          status: 200,
+          headers: {
+            "content-type": "image/jpeg"
+          }
+        });
+      }
+
+      if (url === "https://emdash.example/_emdash/api/schema/collections" && method === "GET") {
+        return jsonResponse({ items: [] });
+      }
+
+      if (url === "https://emdash.example/_emdash/api/schema/collections" && method === "POST") {
+        return jsonResponse({ item: { slug: "posts" } });
+      }
+
+      if (
+        url === "https://emdash.example/_emdash/api/schema/collections/posts/fields" &&
+        method === "GET"
+      ) {
+        return jsonResponse({ items: [] });
+      }
+
+      if (
+        url === "https://emdash.example/_emdash/api/schema/collections/posts/fields" &&
+        method === "POST"
+      ) {
+        return jsonResponse({ item: { slug: "created-field" } });
+      }
+
+      if (url === "https://emdash.example/_emdash/api/taxonomies" && method === "GET") {
+        return jsonResponse({ taxonomies: [] });
+      }
+
+      if (url === "https://emdash.example/_emdash/api/taxonomies" && method === "POST") {
+        return jsonResponse({ taxonomy: { name: "categories" } });
+      }
+
+      if (
+        url === "https://emdash.example/_emdash/api/taxonomies/categories/terms" &&
+        method === "GET"
+      ) {
+        return jsonResponse({ terms: [] });
+      }
+
+      if (
+        url === "https://emdash.example/_emdash/api/taxonomies/categories/terms" &&
+        method === "POST"
+      ) {
+        return jsonResponse({ term: { id: "emdash-term-category", slug: "news", label: "News" } });
+      }
+
+      if (url === "https://emdash.example/_emdash/api/taxonomies/tags/terms" && method === "GET") {
+        return jsonResponse({ terms: [] });
+      }
+
+      if (url === "https://emdash.example/_emdash/api/taxonomies/tags/terms" && method === "POST") {
+        return jsonResponse({ term: { id: "emdash-term-tag", slug: "launch", label: "Launch" } });
+      }
+
+      if (url === "https://emdash.example/_emdash/api/media/upload-url" && method === "POST") {
+        return new Response(
+          JSON.stringify({
+            error: {
+              message: "Storage does not support signed upload URLs. Use direct upload."
+            }
+          }),
+          {
+            status: 501,
+            headers: {
+              "content-type": "application/json"
+            }
+          }
+        );
+      }
+
+      if (url === "https://emdash.example/_emdash/api/content/posts" && method === "POST") {
+        const payload = JSON.parse(String(init?.body)) as {
+          data: {
+            body: Array<{ _type: string }>;
+          };
+        };
+        expect(payload.data.body.length).toBeGreaterThan(0);
+        return jsonResponse({ item: { id: "emdash-entry-2" } });
+      }
+
+      throw new Error(`Unexpected fetch call: ${method} ${url}`);
+    });
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    const adapter = new LiveEmDashTargetAdapter();
+    const result = await adapter.execute(plan, bundle, {
+      url: "https://emdash.example",
+      apiToken: "ec_pat_test"
+    });
+
+    expect(result.failures).toHaveLength(0);
+    expect(result.media[0]).toMatchObject({
+      sourceId: "media-1"
+    });
+    expect(result.entries[0]).toMatchObject({
+      entryId: "emdash-entry-2",
+      status: "imported"
+    });
   });
 });
 
