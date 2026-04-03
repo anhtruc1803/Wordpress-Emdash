@@ -1,0 +1,12 @@
+export { loadWordPressRestApi, normalizeBaseWpJsonUrl, normalizeRestApiBundle } from "./connectors/rest.js";
+export { loadWxrFile } from "./connectors/wxr.js";
+export { auditWordPressSource } from "./auditors/audit-source.js";
+export { computeDifficulty, recommendMigration } from "./auditors/difficulty.js";
+export { parseWxrXml } from "./parsers/wxr.js";
+export { parseGutenbergDocument } from "./parsers/gutenberg.js";
+export { transformContentItem, transformBundleItems } from "./transformers/structured-transform.js";
+export { detectShortcodes } from "./transformers/shortcodes.js";
+export { createImportPlan } from "./planners/create-import-plan.js";
+export { renderMigrationReport } from "./reporters/markdown-report.js";
+export { renderManualFixesCsv } from "./reporters/manual-fixes-csv.js";
+export { executeAudit, executeDryRun, executeImport, loadSourceBundle, regenerateReportFromAudit } from "./pipeline.js";

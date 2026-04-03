@@ -1,0 +1,10 @@
+node_modules/
+.pnpm-store/
+dist/
+artifacts/
+apps/*/node_modules/
+apps/*/.next/
+packages/*/node_modules/
+.console-data/
+*.log
+*.tsbuildinfo

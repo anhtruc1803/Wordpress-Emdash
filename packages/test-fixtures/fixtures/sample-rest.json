@@ -1,0 +1,118 @@
+{
+  "root": {
+    "name": "Sample REST Site",
+    "description": "Fixture REST payload",
+    "url": "https://rest.example.com"
+  },
+  "types": {
+    "post": {
+      "slug": "post",
+      "name": "Posts",
+      "rest_base": "posts",
+      "viewable": true
+    },
+    "page": {
+      "slug": "page",
+      "name": "Pages",
+      "rest_base": "pages",
+      "viewable": true
+    },
+    "book": {
+      "slug": "book",
+      "name": "Books",
+      "rest_base": "books",
+      "viewable": true
+    }
+  },
+  "posts": [
+    {
+      "id": 201,
+      "slug": "rest-post",
+      "date_gmt": "2024-06-01T12:00:00",
+      "modified_gmt": "2024-06-01T14:00:00",
+      "status": "publish",
+      "link": "https://rest.example.com/rest-post",
+      "author": 4,
+      "featured_media": 301,
+      "categories": [11],
+      "tags": [12],
+      "title": { "rendered": "REST Post" },
+      "excerpt": { "rendered": "<p>Excerpt</p>" },
+      "content": {
+        "rendered": "<!-- wp:paragraph --><p>REST paragraph</p><!-- /wp:paragraph -->"
+      }
+    }
+  ],
+  "pages": [
+    {
+      "id": 202,
+      "slug": "rest-page",
+      "date_gmt": "2024-06-02T12:00:00",
+      "modified_gmt": "2024-06-02T14:00:00",
+      "status": "draft",
+      "link": "https://rest.example.com/rest-page",
+      "author": 4,
+      "featured_media": 0,
+      "title": { "rendered": "REST Page" },
+      "excerpt": { "rendered": "" },
+      "content": {
+        "rendered": "<!-- wp:embed {\"url\":\"https://youtu.be/demo\"} /-->"
+      }
+    }
+  ],
+  "books": [
+    {
+      "id": 203,
+      "slug": "rest-book",
+      "date_gmt": "2024-06-03T12:00:00",
+      "modified_gmt": "2024-06-03T14:00:00",
+      "status": "publish",
+      "link": "https://rest.example.com/books/rest-book",
+      "author": 4,
+      "featured_media": 0,
+      "title": { "rendered": "REST Book" },
+      "excerpt": { "rendered": "" },
+      "content": {
+        "rendered": "<!-- wp:acf/book-callout {\"style\":\"promo\"} /-->"
+      }
+    }
+  ],
+  "categories": [
+    {
+      "id": 11,
+      "slug": "guides",
+      "name": "Guides",
+      "description": "",
+      "parent": 0
+    }
+  ],
+  "tags": [
+    {
+      "id": 12,
+      "slug": "featured",
+      "name": "Featured",
+      "description": "",
+      "parent": 0
+    }
+  ],
+  "media": [
+    {
+      "id": 301,
+      "slug": "rest-hero",
+      "source_url": "https://rest.example.com/uploads/rest-hero.jpg",
+      "mime_type": "image/jpeg",
+      "alt_text": "REST Hero",
+      "title": { "rendered": "REST Hero" },
+      "caption": { "rendered": "<p>REST caption</p>" },
+      "description": { "rendered": "" },
+      "author": 4
+    }
+  ],
+  "users": [
+    {
+      "id": 4,
+      "slug": "api-editor",
+      "name": "API Editor"
+    }
+  ]
+}

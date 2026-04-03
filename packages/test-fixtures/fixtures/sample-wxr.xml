@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<rss version="2.0"
+  xmlns:excerpt="http://wordpress.org/export/1.2/excerpt/"
+  xmlns:content="http://purl.org/rss/1.0/modules/content/"
+  xmlns:wfw="http://wellformedweb.org/CommentAPI/"
+  xmlns:dc="http://purl.org/dc/elements/1.1/"
+  xmlns:wp="http://wordpress.org/export/1.2/">
+  <channel>
+    <title>Sample WordPress Site</title>
+    <link>https://example.com</link>
+    <description>Fixture site for migration tests</description>
+    <wp:wxr_version>1.2</wp:wxr_version>
+    <wp:base_site_url>https://example.com</wp:base_site_url>
+    <wp:base_blog_url>https://example.com</wp:base_blog_url>
+    <wp:author>
+      <wp:author_id>7</wp:author_id>
+      <wp:author_login>editor</wp:author_login>
+      <wp:author_email>editor@example.com</wp:author_email>
+      <wp:author_display_name>Site Editor</wp:author_display_name>
+    </wp:author>
+    <wp:term>
+      <wp:term_id>11</wp:term_id>
+      <wp:term_taxonomy>category</wp:term_taxonomy>
+      <wp:term_slug>news</wp:term_slug>
+      <wp:term_name>News</wp:term_name>
+    </wp:term>
+    <wp:term>
+      <wp:term_id>12</wp:term_id>
+      <wp:term_taxonomy>post_tag</wp:term_taxonomy>
+      <wp:term_slug>launch</wp:term_slug>
+      <wp:term_name>Launch</wp:term_name>
+    </wp:term>
+    <item>
+      <title>Hello Gutenberg</title>
+      <link>https://example.com/hello-gutenberg</link>
+      <dc:creator>editor</dc:creator>
+      <content:encoded><![CDATA[
+<!-- wp:heading {"level":2} -->
+<h2>Welcome</h2>
+<!-- /wp:heading -->
+<!-- wp:paragraph -->
+<p>Intro with a [gallery ids="5,6"] shortcode.</p>
+<!-- /wp:paragraph -->
+<!-- wp:image {"id":25,"sizeSlug":"large"} -->
+<figure class="wp-block-image size-large"><img src="https://example.com/uploads/hero.jpg" alt="Hero"/></figure>
+<!-- /wp:image -->
+<!-- wp:html -->
+<div data-legacy-widget="1"><script>alert("legacy")</script></div>
+<!-- /wp:html -->
+      ]]></content:encoded>
+      <excerpt:encoded><![CDATA[Short summary]]></excerpt:encoded>
+      <wp:post_id>101</wp:post_id>
+      <wp:post_date_gmt>2024-05-10 10:00:00</wp:post_date_gmt>
+      <wp:post_name>hello-gutenberg</wp:post_name>
+      <wp:status>publish</wp:status>
+      <wp:post_type>post</wp:post_type>
+      <category domain="category" nicename="news"><![CDATA[News]]></category>
+      <category domain="post_tag" nicename="launch"><![CDATA[Launch]]></category>
+    </item>
+    <item>
+      <title>About</title>
+      <link>https://example.com/about</link>
+      <dc:creator>editor</dc:creator>
+      <content:encoded><![CDATA[
+<!-- wp:paragraph -->
+<p>About page with iframe embed.</p>
+<!-- /wp:paragraph -->
+<iframe src="https://www.youtube.com/embed/demo"></iframe>
+      ]]></content:encoded>
+      <wp:post_id>102</wp:post_id>
+      <wp:post_date_gmt>2024-05-11 11:00:00</wp:post_date_gmt>
+      <wp:post_name>about</wp:post_name>
+      <wp:status>publish</wp:status>
+      <wp:post_type>page</wp:post_type>
+    </item>
+    <item>
+      <title>Portfolio Entry</title>
+      <link>https://example.com/portfolio/entry-one</link>
+      <dc:creator>editor</dc:creator>
+      <content:encoded><![CDATA[
+<!-- wp:acf/project-hero {"foo":"bar"} /-->
+      ]]></content:encoded>
+      <wp:post_id>103</wp:post_id>
+      <wp:post_date_gmt>2024-05-12 12:00:00</wp:post_date_gmt>
+      <wp:post_name>entry-one</wp:post_name>
+      <wp:status>publish</wp:status>
+      <wp:post_type>portfolio</wp:post_type>
+    </item>
+    <item>
+      <title>Hero Image</title>
+      <link>https://example.com/uploads/hero.jpg</link>
+      <dc:creator>editor</dc:creator>
+      <wp:post_id>25</wp:post_id>
+      <wp:post_name>hero-image</wp:post_name>
+      <wp:post_type>attachment</wp:post_type>
+      <wp:attachment_url>https://example.com/uploads/hero.jpg</wp:attachment_url>
+      <wp:postmeta>
+        <wp:meta_key>_wp_attachment_image_alt</wp:meta_key>
+        <wp:meta_value>Hero</wp:meta_value>
+      </wp:postmeta>
+    </item>
+  </channel>
+</rss>

@@ -1,0 +1,39 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 245 247 250;
+  --foreground: 16 24 40;
+  --panel: 255 255 255;
+  --panel-strong: 247 249 252;
+  --line: 222 228 237;
+  --muted: 99 115 129;
+  --accent: 19 99 223;
+  --success: 19 122 81;
+  --warning: 191 102 0;
+  --danger: 186 36 62;
+  --info: 37 99 235;
+  --font-sans: "Manrope";
+  --font-mono: "JetBrains Mono";
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply bg-background text-foreground antialiased;
+}
+
+* {
+  @apply border-line;
+}
+
+pre {
+  @apply overflow-x-auto rounded-xl bg-slate-950 p-4 text-xs text-slate-100;
+}
+
+code {
+  font-family: var(--font-mono), Consolas, monospace;
+}
