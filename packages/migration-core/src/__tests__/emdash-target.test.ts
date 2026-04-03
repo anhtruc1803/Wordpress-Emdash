@@ -253,6 +253,25 @@ describe("LiveEmDashTargetAdapter", () => {
         return jsonResponse({ item: { id: "emdash-media-1" } });
       }
 
+      if (
+        url === "https://emdash.example/_emdash/api/content/posts/hello-world" &&
+        method === "GET"
+      ) {
+        return new Response(
+          JSON.stringify({
+            error: {
+              message: "Content item not found: hello-world"
+            }
+          }),
+          {
+            status: 404,
+            headers: {
+              "content-type": "application/json"
+            }
+          }
+        );
+      }
+
       if (url === "https://emdash.example/_emdash/api/content/posts" && method === "POST") {
         const payload = JSON.parse(String(init?.body)) as {
           data: {
@@ -413,6 +432,25 @@ describe("LiveEmDashTargetAdapter", () => {
         );
       }
 
+      if (
+        url === "https://emdash.example/_emdash/api/content/posts/hello-world" &&
+        method === "GET"
+      ) {
+        return new Response(
+          JSON.stringify({
+            error: {
+              message: "Content item not found: hello-world"
+            }
+          }),
+          {
+            status: 404,
+            headers: {
+              "content-type": "application/json"
+            }
+          }
+        );
+      }
+
       if (url === "https://emdash.example/_emdash/api/content/posts" && method === "POST") {
         const payload = JSON.parse(String(init?.body)) as {
           data: {
@@ -447,6 +485,138 @@ describe("LiveEmDashTargetAdapter", () => {
     });
     expect(result.entries[0]).toMatchObject({
       entryId: "emdash-entry-2",
+      status: "imported"
+    });
+  });
+
+  it("updates an existing EmDash entry when the slug is already present", async () => {
+    const fetchMock = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      const url =
+        typeof input === "string"
+          ? input
+          : input instanceof URL
+            ? input.toString()
+            : input.url;
+      const method = (init?.method ?? "GET").toUpperCase();
+
+      if (url === "https://source.test/image.jpg") {
+        return new Response("binary-image-data", {
+          status: 200,
+          headers: {
+            "content-type": "image/jpeg"
+          }
+        });
+      }
+
+      if (url === "https://emdash.example/_emdash/api/schema/collections" && method === "GET") {
+        return jsonResponse({ items: [{ slug: "posts" }] });
+      }
+
+      if (
+        url === "https://emdash.example/_emdash/api/schema/collections/posts/fields" &&
+        method === "GET"
+      ) {
+        return jsonResponse({
+          items: [
+            { slug: "title", type: "string", required: true, defaultValue: null },
+            { slug: "body", type: "portableText", required: true, defaultValue: null },
+            { slug: "migration_excerpt", type: "text", required: false, defaultValue: null },
+            { slug: "migration_source_url", type: "string", required: false, defaultValue: null },
+            { slug: "migration_published_at", type: "datetime", required: false, defaultValue: null },
+            { slug: "migration_meta", type: "json", required: false, defaultValue: null }
+          ]
+        });
+      }
+
+      if (url === "https://emdash.example/_emdash/api/taxonomies" && method === "GET") {
+        return jsonResponse({ taxonomies: [] });
+      }
+
+      if (url === "https://emdash.example/_emdash/api/taxonomies" && method === "POST") {
+        return jsonResponse({ taxonomy: { name: "categories" } });
+      }
+
+      if (
+        url === "https://emdash.example/_emdash/api/taxonomies/categories/terms" &&
+        method === "GET"
+      ) {
+        return jsonResponse({ terms: [] });
+      }
+
+      if (
+        url === "https://emdash.example/_emdash/api/taxonomies/categories/terms" &&
+        method === "POST"
+      ) {
+        return jsonResponse({ term: { id: "emdash-term-category", slug: "news", label: "News" } });
+      }
+
+      if (url === "https://emdash.example/_emdash/api/taxonomies/tags/terms" && method === "GET") {
+        return jsonResponse({ terms: [] });
+      }
+
+      if (url === "https://emdash.example/_emdash/api/taxonomies/tags/terms" && method === "POST") {
+        return jsonResponse({ term: { id: "emdash-term-tag", slug: "launch", label: "Launch" } });
+      }
+
+      if (url === "https://emdash.example/_emdash/api/media/upload-url" && method === "POST") {
+        return new Response(
+          JSON.stringify({
+            error: {
+              message: "Storage does not support signed upload URLs. Use direct upload."
+            }
+          }),
+          {
+            status: 501,
+            headers: {
+              "content-type": "application/json"
+            }
+          }
+        );
+      }
+
+      if (
+        url === "https://emdash.example/_emdash/api/content/posts/hello-world" &&
+        method === "GET"
+      ) {
+        return jsonResponse({
+          item: {
+            id: "existing-entry-1",
+            slug: "hello-world"
+          }
+        });
+      }
+
+      if (
+        url === "https://emdash.example/_emdash/api/content/posts/existing-entry-1" &&
+        method === "PUT"
+      ) {
+        const payload = JSON.parse(String(init?.body)) as {
+          data: {
+            title: string;
+            body: Array<{ _type: string }>;
+          };
+        };
+        expect(payload.data.title).toBe("Hello World");
+        expect(payload.data.body.length).toBeGreaterThan(0);
+        return jsonResponse({ item: { id: "existing-entry-1" } });
+      }
+
+      throw new Error(`Unexpected fetch call: ${method} ${url}`);
+    });
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    const adapter = new LiveEmDashTargetAdapter();
+    const result = await adapter.execute(plan, bundle, {
+      url: "https://emdash.example",
+      apiToken: "ec_pat_test"
+    });
+
+    expect(result.failures).toHaveLength(0);
+    expect(result.entries[0]).toMatchObject({
+      sourceId: "post-1",
+      collection: "posts",
+      entryId: "existing-entry-1",
       status: "imported"
     });
   });

@@ -64,6 +64,8 @@ export interface EmDashTermRecord {
 
 export interface EmDashContentRecord {
   id: string;
+  slug?: string | null;
+  data?: Record<string, unknown>;
 }
 
 interface EmDashMediaRecord {
@@ -310,6 +312,29 @@ export class EmDashApiClient {
       }
     );
     return response.item;
+  }
+
+  async getContent(
+    collection: string,
+    idOrSlug: string
+  ): Promise<EmDashContentRecord | null> {
+    const headers = new Headers();
+    headers.set("Authorization", `Bearer ${this.target.apiToken}`);
+
+    const response = await fetch(
+      `${this.apiBaseUrl}/content/${encodeURIComponent(collection)}/${encodeURIComponent(idOrSlug)}`,
+      {
+        method: "GET",
+        headers
+      }
+    );
+
+    if (response.status === 404) {
+      return null;
+    }
+
+    const payload = await unwrapApiResponse<{ item: EmDashContentRecord }>(response);
+    return payload.item;
   }
 
   async updateContent(

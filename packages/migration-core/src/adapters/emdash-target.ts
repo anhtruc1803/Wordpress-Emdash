@@ -282,11 +282,47 @@ export class LiveEmDashTargetAdapter implements EmDashTargetAdapter {
       };
 
       try {
-        let created;
+        const existingEntry = await client.getContent(entry.targetCollection, entry.slug);
+        let created = existingEntry ?? undefined;
+
+        if (existingEntry?.id) {
+          await client.updateContent(entry.targetCollection, existingEntry.id, {
+            slug: entry.slug,
+            status: mapWordPressStatusToEmDashStatus(entry.status),
+            data: fullEntryData
+          });
+
+          result.entries.push({
+            sourceId: entry.sourceId,
+            collection: entry.targetCollection,
+            slug: entry.slug,
+            entryId: existingEntry.id,
+            status: "imported"
+          });
+          continue;
+        }
 
         try {
           created = await client.createContent(entry.targetCollection, primaryCreatePayload);
         } catch (primaryError) {
+          const conflictingEntry = await client.getContent(entry.targetCollection, entry.slug);
+          if (conflictingEntry?.id) {
+            await client.updateContent(entry.targetCollection, conflictingEntry.id, {
+              slug: entry.slug,
+              status: mapWordPressStatusToEmDashStatus(entry.status),
+              data: fullEntryData
+            });
+
+            result.entries.push({
+              sourceId: entry.sourceId,
+              collection: entry.targetCollection,
+              slug: entry.slug,
+              entryId: conflictingEntry.id,
+              status: "imported"
+            });
+            continue;
+          }
+
           const minimalCreatePayload = {
             slug: entry.slug,
             status: mapWordPressStatusToEmDashStatus(entry.status),
@@ -302,6 +338,24 @@ export class LiveEmDashTargetAdapter implements EmDashTargetAdapter {
           try {
             created = await client.createContent(entry.targetCollection, minimalCreatePayload);
           } catch (minimalError) {
+            const recoveredEntry = await client.getContent(entry.targetCollection, entry.slug);
+            if (recoveredEntry?.id) {
+              await client.updateContent(entry.targetCollection, recoveredEntry.id, {
+                slug: entry.slug,
+                status: mapWordPressStatusToEmDashStatus(entry.status),
+                data: fullEntryData
+              });
+
+              result.entries.push({
+                sourceId: entry.sourceId,
+                collection: entry.targetCollection,
+                slug: entry.slug,
+                entryId: recoveredEntry.id,
+                status: "imported"
+              });
+              continue;
+            }
+
             throw new Error(
               buildCreateFailureMessage(
                 minimalError,
